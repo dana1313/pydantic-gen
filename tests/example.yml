@@ -18,6 +18,6 @@ schemas:
         default: [1, 2, 3]
       - name: text
         type: str
-        default: "default_string"
+        default: default_string
       - name: other_schema
         type: GeneratedSchema1
