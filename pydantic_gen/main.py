@@ -26,7 +26,7 @@ def yaml_to_box(filename: Union[Path, str]):
 @attr.s
 class SchemaGen:
     filename: Union[Path, str] = attr.ib()
-    _additional_imports = []
+    _additional_imports = set()
 
     _templates: Box = yaml_to_box("templates.yml")
     _module: Template = Template(_templates.module)
@@ -40,7 +40,7 @@ class SchemaGen:
         if not self.filename.is_file():
             raise FileNotFoundError(f"{self.filename.name}")
         self.file = yaml_to_box(self.filename)
-        self.code = self._make_module()
+        self.code = self._make_module_and_schemas()
         self._test_module()
 
     def _test_module(self):
@@ -49,13 +49,13 @@ class SchemaGen:
         except Exception as e:
             raise GeneratedCodeExecutionFailed(e)
 
-    def _make_module(self) -> str:
+    def _make_module_and_schemas(self) -> str:
+        schemas = self._schemas.render(schemas=self._make_schemas())
         additional_imports = (
             "\n".join(self._additional_imports) if self._additional_imports else ""
         )
-        return self._module.render(
-            schemas=self._make_schemas(), imports=additional_imports
-        )
+        module = self._module.render(imports=additional_imports)
+        return "\n\n\n".join([module, schemas])
 
     def _make_schemas(self) -> str:
         schemas = []
@@ -75,10 +75,14 @@ class SchemaGen:
     def _make_prop(self, prop: Box) -> str:
         if not prop.get("default"):
             default_value = ""
-        elif prop.type == "str":
-            default_value = f" = '{prop.default}'"
+        elif prop.type in ["str", "date", "datetime", "time"]:
+            default_value = f' = "{prop.default}"'
         else:
             default_value = f" = {prop.default}"
+
+        if prop.type in ["date", "datetime", "time"]:
+            self._additional_imports.add("import datetime as dt")
+            prop.type = f"dt.{prop.type}"
 
         if prop.get("optional"):
             prop_type = f"Optional[{prop.type}]"
