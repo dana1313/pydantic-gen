@@ -45,7 +45,7 @@ class SchemaGen:
 
     def _test_module(self):
         try:
-            exec(self.code)
+            exec(self.code, globals())
         except Exception as e:
             raise GeneratedCodeExecutionFailed(e)
 
