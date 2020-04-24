@@ -41,13 +41,7 @@ class SchemaGen:
             raise FileNotFoundError(f"{self.filename.name}")
         self.file = yaml_to_box(self.filename)
         self.code = self._make_module_and_schemas()
-        self._test_module()
 
-    def _test_module(self):
-        try:
-            exec(self.code, globals())
-        except Exception as e:
-            raise GeneratedCodeExecutionFailed(e)
 
     def _make_module_and_schemas(self) -> str:
         schemas = self._schemas.render(schemas=self._make_schemas())
